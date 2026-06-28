@@ -1,0 +1,53 @@
+.header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:20px 30px;
+
+    background:#1E293B;
+
+    border-bottom:1px solid #334155;
+
+}
+
+.header h1{
+
+    color:white;
+
+}
+
+.header p{
+
+    color:#94A3B8;
+
+}
+
+.status{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    color:white;
+
+    font-weight:bold;
+
+}
+
+.dot{
+
+    width:12px;
+
+    height:12px;
+
+    background:#22C55E;
+
+    border-radius:50%;
+
+}
