@@ -2,22 +2,32 @@ import { useEffect, useState } from "react";
 
 import MachineContext from "./MachineContext";
 
-
-
 import StorageService from "../services/storage.service";
-
 import HistoryService from "../services/history.service";
-
 import RuntimeService from "../services/runtime.service";
-
 import EventService from "../services/event.service";
 
+
 import { APP_CONFIG } from "../config/app.config";
+
 import socket from "../Socket/Socket";
+import pdfReportService from "../Components/report/pdfReport.service";
+import operatorService from "../services/operator.service";
+import shiftService from "../services/shift.service";
+import { toast } from "react-toastify";
+
+
 
 function MachineProvider({ children }) {
 
     const [connected, setConnected] = useState(false);
+const [intervalData, setIntervalData] = useState(
+    shiftService.getIntervalData()
+);
+
+const [currentInterval, setCurrentInterval] = useState(
+    shiftService.getCurrentInterval()
+);
 
     const [machineData, setMachineData] = useState(
 
@@ -27,21 +37,15 @@ function MachineProvider({ children }) {
 
             {
 
-                power: "OFF",
+                motorStatus: "OFF",
 
-                speed: 0,
+                frequency: 0,
 
-                temperature: 0,
-
-                current: 0,
-
-                voltage: 0,
-
-                torque: 0,
-
-                vibration: 0,
+                pipeLength: 0,
 
                 alarm: false,
+
+                alarmMessage: "",
 
                 timestamp: null
 
@@ -85,39 +89,27 @@ function MachineProvider({ children }) {
 
         socket.on("modbus-data", (payload) => {
 
-            const newState = {
+           const newState = {
 
-                power:
+    motorStatus: payload.registers.motorStatus,
 
-                    payload.registers.speed > 0
+    frequency: payload.registers.frequency,
 
-                        ? "ON"
+    pipeLength: payload.registers.pipeLength,
 
-                        : "OFF",
+    totalPipeLength: payload.registers.totalPipeLength,
 
-                speed: payload.registers.speed,
+    alarm: payload.registers.alarm,
 
-                temperature: payload.registers.temperature,
+    alarmMessage: payload.registers.alarmMessage,
 
-                current: payload.registers.current,
+    timestamp: payload.timestamp
 
-                voltage: payload.registers.voltage,
+};
 
-                torque: payload.registers.torque,
+            const previousStatus = machineData.motorStatus;
 
-                vibration: payload.registers.vibration,
-
-                alarm: payload.registers.alarm,
-
-                timestamp: payload.timestamp
-
-            };
-
-            // Previous state
-
-            const previousPower = machineData.power;
-
-            // Save latest state
+            const previousAlarm = machineData.alarm;
 
             StorageService.save(
 
@@ -127,39 +119,76 @@ function MachineProvider({ children }) {
 
             );
 
-            // Save history
-
             const updatedHistory =
 
                 HistoryService.append(newState);
-
-            // Runtime
 
             const updatedRuntime =
 
                 RuntimeService.update(
 
-                    newState.power
+                    newState.motorStatus
 
                 );
+const intervalChanged =
+    shiftService.checkIntervalChange();
 
-            // Events
+if (intervalChanged) {
+
+    console.log("Interval changed. Resetting system...");
+
+    resetSystem(false);
+
+}
+
+                shiftService.updateProduction(newState.pipeLength);
+
+shiftService.updateRuntime(updatedRuntime);
+
+const updatedIntervalData =
+    shiftService.getIntervalData();
+
+    shiftService.setOperator(
+    operatorService.get()
+);
 
             let updatedEvents = events;
 
-            if (
+            // Motor Events
 
-                previousPower !== newState.power
-
-            ) {
+            if (previousStatus !== newState.motorStatus) {
 
                 updatedEvents = EventService.add(
 
-                    newState.power === "ON"
+                    newState.motorStatus === "ON"
 
-                        ? "Motor Started"
+                        ? "Machine Started"
 
-                        : "Motor Stopped"
+                        : "Machine Stopped"
+
+                );
+
+            }
+
+            // Alarm Trigger
+
+            if (!previousAlarm && newState.alarm) {
+
+                updatedEvents = EventService.add(
+
+                    "⚠ Low Frequency Alarm"
+
+                );
+
+            }
+
+            // Alarm Cleared
+
+            if (previousAlarm && !newState.alarm) {
+
+                updatedEvents = EventService.add(
+
+                    "✅ Frequency Back To Normal"
 
                 );
 
@@ -170,6 +199,12 @@ function MachineProvider({ children }) {
             setHistory(updatedHistory);
 
             setRuntime(updatedRuntime);
+
+           setIntervalData(updatedIntervalData);
+
+setCurrentInterval(
+    shiftService.getCurrentInterval()
+);
 
             setEvents(updatedEvents);
 
@@ -187,23 +222,86 @@ function MachineProvider({ children }) {
 
     }, [machineData, events]);
 
+
+function resetSystem() {
+toast.success("Shift reset completed successfully.");
+    pdfReportService.download(
+        machineData,
+        history,
+        runtime,
+        currentInterval,
+        intervalData[currentInterval.key]
+    );
+
+    socket.emit("reset-system");
+
+    HistoryService.clearHistory();
+
+    const resetRuntime = RuntimeService.reset();
+
+    EventService.clear();
+
+    shiftService.resetCurrentInterval();
+
+    setIntervalData(
+        shiftService.getIntervalData()
+    );
+
+    StorageService.remove(
+        APP_CONFIG.STORAGE_KEYS.MACHINE_HISTORY
+    );
+
+    StorageService.remove(
+        APP_CONFIG.STORAGE_KEYS.MACHINE_RUNTIME
+    );
+
+    StorageService.remove(
+        APP_CONFIG.STORAGE_KEYS.MACHINE_EVENTS
+    );
+
+    setHistory([]);
+
+    setRuntime(resetRuntime);
+
+    setEvents([]);
+
+    operatorService.save("Unassigned");
+
+    setOperatorName("Unassigned");
+    setOperatorInput("");
+
+    setEditingOperator(true);
+
+    setMachineData(prev => ({
+        ...prev,
+        totalPipeLength: 0
+    }));
+
+  
+}
     return (
 
         <MachineContext.Provider
 
-            value={{
+       value={{
 
-                connected,
+    connected,
 
-                machineData,
+    machineData,
 
-                runtime,
+    runtime,
 
-                history,
+    history,
 
-                events
+    events,
 
-            }}
+    intervalData,
+
+    currentInterval,
+
+    resetSystem
+
+}}
 
         >
 

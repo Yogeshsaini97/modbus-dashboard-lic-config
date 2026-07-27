@@ -1,65 +1,57 @@
-import { Grid, Paper, Typography } from "@mui/material";
-import dayjs from "dayjs";
-import { useMachine } from "../../Context/MachineContext";
+import {
+    Grid,
+    Paper,
+    Typography,
+    Chip
+} from "@mui/material";
 
+import dayjs from "dayjs";
+
+import { useMachine } from "../../Context/MachineContext";
+import { formatPipeLength, formatRuntime } from "../../helpers/helpers";
 
 function ReportSummary() {
 
-    const { machineData, history } = useMachine();
-
-    const maxSpeed =
-        history.length > 0
-            ? Math.max(...history.map(item => item.speed))
-            : 0;
-
-    const avgSpeed =
-        history.length > 0
-            ? (
-                  history.reduce(
-                      (sum, item) => sum + item.speed,
-                      0
-                  ) / history.length
-              ).toFixed(2)
-            : 0;
-
-    const maxTemperature =
-        history.length > 0
-            ? Math.max(...history.map(item => item.temperature))
-            : 0;
+    const {
+        machineData,
+        history,
+        runtime
+    } = useMachine();
 
     const cards = [
+
         {
-            title: "Date",
+            title: "Today's Date",
             value: dayjs().format("DD MMM YYYY")
         },
+
+       
+
         {
-            title: "Records",
+            title: "Total Records Saved",
             value: history.length
         },
+
         {
-            title: "Current Status",
-            value: machineData.power
+            title: "Machine Start Count",
+            value: runtime.startCount || 0
         },
+
         {
-            title: "Current Speed",
-            value: `${machineData.speed} RPM`
+            title: "Runtime Today",
+            value: `${formatRuntime(runtime?.todayRuntime)|| 0}`
         },
+
         {
-            title: "Average Speed",
-            value: `${avgSpeed} RPM`
+            title: "current motor frequency(HZ)",
+            value: `${machineData.frequency} Hz`
         },
+
         {
-            title: "Maximum Speed",
-            value: `${maxSpeed} RPM`
-        },
-        {
-            title: "Current Temperature",
-            value: `${machineData.temperature} °C`
-        },
-        {
-            title: "Maximum Temperature",
-            value: `${maxTemperature} °C`
+            title: "TotalPipe Length produced",
+            value: `${formatPipeLength(machineData.totalPipeLength )}`
         }
+
     ];
 
     return (
@@ -70,47 +62,162 @@ function ReportSummary() {
             sx={{ mb: 3 }}
         >
 
-            {cards.map((card) => (
+            {/* Motor Status */}
 
-                <Grid
-                    item
-                    xs={12}
-                    sm={6}
-                    md={3}
-                    key={card.title}
+            <Grid item xs={12} sm={6} md={3}>
+
+                <Paper
+                    elevation={3}
+                    sx={{
+                        p: 2,
+                        borderRadius: 3,
+                        textAlign: "center",
+                        height: "100%",
+                        transition: ".3s",
+                        "&:hover": {
+                            transform: "translateY(-3px)"
+                        }
+                    }}
                 >
 
-                    <Paper
-                        elevation={3}
-                        sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            textAlign: "center"
-                        }}
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
                     >
 
-                        <Typography
-                            variant="body2"
-                            color="text.secondary"
-                        >
-                            {card.title}
-                        </Typography>
+                        Motor Status
 
-                        <Typography
-                            variant="h6"
+                    </Typography>
+
+                    <Chip
+
+                        label={machineData.motorStatus}
+
+                        color={
+                            machineData.motorStatus === "ON"
+                                ? "success"
+                                : "error"
+                        }
+
+                        sx={{
+                            mt: 2,
+                            fontWeight: "bold"
+                        }}
+
+                    />
+
+                </Paper>
+
+            </Grid>
+
+            {/* Frequency Alarm */}
+
+            <Grid item xs={12} sm={6} md={3}>
+
+                <Paper
+                    elevation={3}
+                    sx={{
+                        p: 2,
+                        borderRadius: 3,
+                        textAlign: "center",
+                        height: "100%",
+                        transition: ".3s",
+                        "&:hover": {
+                            transform: "translateY(-3px)"
+                        }
+                    }}
+                >
+
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                    >
+
+                        Alarm Status
+
+                    </Typography>
+
+                    <Chip
+
+                        label={
+                            machineData.alarm
+                                ? "LOW FREQUENCY"
+                                : "HEALTHY"
+                        }
+
+                        color={
+                            machineData.alarm
+                                ? "error"
+                                : "success"
+                        }
+
+                        sx={{
+                            mt: 2,
+                            fontWeight: "bold"
+                        }}
+
+                    />
+
+                </Paper>
+
+            </Grid>
+
+            {/* Remaining Cards */}
+
+            {
+
+                cards.map((card) => (
+
+                    <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        key={card.title}
+                    >
+
+                        <Paper
+                            elevation={3}
                             sx={{
-                                mt: 1,
-                                fontWeight: "bold"
+                                p: 2,
+                                borderRadius: 3,
+                                textAlign: "center",
+                                height: "100%",
+                                transition: ".3s",
+                                "&:hover": {
+                                    transform: "translateY(-3px)"
+                                }
                             }}
                         >
-                            {card.value}
-                        </Typography>
 
-                    </Paper>
+                            <Typography
+                                variant="body2"
+                                color="text.secondary"
+                            >
 
-                </Grid>
+                                {card.title}
 
-            ))}
+                            </Typography>
+
+                            <Typography
+                                variant="h6"
+                                sx={{
+                                    mt: 1,
+                                    fontWeight: 700
+                                }}
+                            >
+
+                                {card.value}
+
+                            </Typography>
+
+                        </Paper>
+
+                    </Grid>
+
+                ))
+
+            }
 
         </Grid>
 

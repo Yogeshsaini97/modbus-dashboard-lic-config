@@ -1,17 +1,18 @@
 import {
+    Chip,
+    Paper,
     Table,
     TableBody,
     TableCell,
     TableContainer,
     TableHead,
-    TableRow,
-    Paper
+    TableRow
 } from "@mui/material";
 
 import dayjs from "dayjs";
+
 import { useMachine } from "../../Context/MachineContext";
-
-
+import { formatPipeLength } from "../../helpers/helpers";
 
 function ReportTable() {
 
@@ -23,7 +24,8 @@ function ReportTable() {
             component={Paper}
             sx={{
                 mt: 3,
-                maxHeight: 500
+                maxHeight: 500,
+                borderRadius: 3
             }}
         >
 
@@ -33,21 +35,21 @@ function ReportTable() {
 
                     <TableRow>
 
-                        <TableCell>Time</TableCell>
+                        <TableCell>
+                            <strong>Date & Time</strong>
+                        </TableCell>
 
-                        <TableCell>Power</TableCell>
+                        <TableCell align="center">
+                            <strong>Motor Status Recorded</strong>
+                        </TableCell>
 
-                        <TableCell>Speed</TableCell>
+                        <TableCell align="center">
+                            <strong>Motor RPM Recorded</strong>
+                        </TableCell>
 
-                        <TableCell>Temperature</TableCell>
-
-                        <TableCell>Current</TableCell>
-
-                        <TableCell>Voltage</TableCell>
-
-                        <TableCell>Torque</TableCell>
-
-                        <TableCell>Alarm</TableCell>
+                        <TableCell align="center">
+                            <strong>Total Pipe Length produced(metre)</strong>
+                        </TableCell>
 
                     </TableRow>
 
@@ -55,9 +57,12 @@ function ReportTable() {
 
                 <TableBody>
 
-                    {history.map((row) => (
-
-                        <TableRow key={row.timestamp}>
+                    {[...history].reverse().map((row) => (
+                       
+                        <TableRow
+                            hover
+                            key={row.timestamp}
+                        >
 
                             <TableCell>
 
@@ -67,23 +72,41 @@ function ReportTable() {
 
                             </TableCell>
 
-                            <TableCell>{row.power}</TableCell>
+                            <TableCell align="center">
 
-                            <TableCell>{row.speed} RPM</TableCell>
+                                <Chip
 
-                            <TableCell>{row.temperature} °C</TableCell>
+                                    size="small"
 
-                            <TableCell>{row.current} A</TableCell>
+                                    label={row.motorStatus}
 
-                            <TableCell>{row.voltage} V</TableCell>
+                                    color={
+                                        row.motorStatus === "ON"
+                                            ? "success"
+                                            : "error"
+                                    }
 
-                            <TableCell>{row.torque}</TableCell>
+                                />
 
-                            <TableCell>
+                            </TableCell>
 
-                                {row.alarm
-                                    ? "Alarm"
-                                    : "No Alarm"}
+                            <TableCell align="center">
+
+                                <strong>
+
+                                    {row.frequency} RPM
+
+                                </strong>
+
+                            </TableCell>
+
+                            <TableCell align="center">
+
+                                <strong>
+
+                                    {formatPipeLength(row.totalPipeLength || 0)}
+
+                                </strong>
 
                             </TableCell>
 

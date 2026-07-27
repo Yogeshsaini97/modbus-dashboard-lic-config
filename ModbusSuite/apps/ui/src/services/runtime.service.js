@@ -10,7 +10,7 @@ class RuntimeService {
         const runtime = StorageService.get(
             APP_CONFIG.STORAGE_KEYS.MACHINE_RUNTIME,
             {
-                todayRuntime: 0,
+                todayRuntime: 60,
                 todayOffTime: 0,
                 startCount: 0,
                 stopCount: 0,
@@ -61,7 +61,7 @@ class RuntimeService {
         return StorageService.get(
             APP_CONFIG.STORAGE_KEYS.MACHINE_RUNTIME,
             {
-                todayRuntime: 0,
+                todayRuntime: 60,
                 todayOffTime: 0,
                 startCount: 0,
                 stopCount: 0,
@@ -79,6 +79,36 @@ class RuntimeService {
         );
 
     }
+    reset() {
+
+   const runtime = {
+
+    todayRuntime: 60, // Start from 1 minute
+
+    todayOffTime: 0,
+
+    startCount: 0,
+
+    stopCount: 0,
+
+    lastPowerState: "OFF",
+
+    lastStateChange: Date.now()
+
+};
+
+    StorageService.save(
+
+        APP_CONFIG.STORAGE_KEYS.MACHINE_RUNTIME,
+
+        runtime
+
+    );
+
+
+    return runtime;
+
+}
 
 }
 

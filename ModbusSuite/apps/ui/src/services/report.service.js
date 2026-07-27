@@ -1,12 +1,13 @@
 import * as XLSX from "xlsx";
 import dayjs from "dayjs";
+import { formatPipeLength } from "../helpers/helpers";
 
 class ReportService {
 
     downloadExcel(history) {
-        console.log("current history", history)
 
-        if (!history.length) {
+
+        if (!history || !history.length) {
 
             alert("No records found.");
 
@@ -14,29 +15,39 @@ class ReportService {
 
         }
 
-        const excelData = history.map((row) => ({
+        const excelData =[...history].reverse().map((row, index) => ({
+
+            "Sr No": index + 1,
 
             "Date": dayjs(row.timestamp).format("DD MMM YYYY"),
 
             "Time": dayjs(row.timestamp).format("hh:mm:ss A"),
 
-            "Power": row.power,
+            "Motor Status": row.motorStatus,
 
-            "Speed (RPM)": row.speed,
+            "Motor RPM": row.motorRPM,
 
-            "Temperature (°C)": row.temperature,
-
-            "Current (A)": row.current,
-
-            "Voltage (V)": row.voltage,
-
-            "Torque": row.torque,
-
-            "Alarm": row.alarm ? "YES" : "NO"
+            "Pipe Length (m/min)": formatPipeLength(row.pipeLength)
 
         }));
 
         const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+        worksheet["!cols"] = [
+
+            { wch: 8 },
+
+            { wch: 18 },
+
+            { wch: 18 },
+
+            { wch: 18 },
+
+            { wch: 18 },
+
+            { wch: 20 }
+
+        ];
 
         const workbook = XLSX.utils.book_new();
 
@@ -46,7 +57,7 @@ class ReportService {
 
             worksheet,
 
-            "View & download operational history"
+            "Operational History"
 
         );
 
@@ -54,7 +65,7 @@ class ReportService {
 
             workbook,
 
-            `Machine_Report_${dayjs().format("DD-MM-YYYY_HH-mm")}.xlsx`
+            `Operational_History_${dayjs().format("DD-MM-YYYY_HH-mm")}.xlsx`
 
         );
 

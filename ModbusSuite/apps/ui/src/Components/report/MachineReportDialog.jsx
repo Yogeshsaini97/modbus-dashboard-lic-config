@@ -4,19 +4,30 @@ import {
     DialogContent,
     DialogActions,
     Button,
-    Divider
+    Divider,
+    Stack
 } from "@mui/material";
+
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import TableViewIcon from "@mui/icons-material/TableView";
 
 import ReportSummary from "./ReportSummary";
 import ReportTable from "./ReportTable";
+
 import reportService from "../../services/report.service";
+
+
 import { useMachine } from "../../Context/MachineContext";
+import pdfReportService from "./pdfReport.service";
 
 function MachineReportDialog({ open, onClose }) {
 
-      const { history } = useMachine();
-      console.log(history);
-console.log(Array.isArray(history));
+    const {
+        history,
+        machineData,
+        runtime,
+        events
+    } = useMachine();
 
     return (
 
@@ -28,41 +39,70 @@ console.log(Array.isArray(history));
         >
 
             <DialogTitle>
-                View & download operational history
+
+                View operational history
+
             </DialogTitle>
 
             <Divider />
 
             <DialogContent>
 
-                {/* Summary Section */}
                 <ReportSummary />
 
-                {/* Report Table */}
                 <ReportTable />
 
             </DialogContent>
 
             <Divider />
 
-            <DialogActions>
+            <DialogActions
+                sx={{
+                    px:3,
+                    py:2
+                }}
+            >
 
                 <Button
+
                     variant="outlined"
+
                     onClick={onClose}
+
                 >
+
                     Close
+
                 </Button>
 
-              <Button
-    variant="contained"
-    color="success"
-    onClick={() =>
-        reportService.downloadExcel(history)
-    }
->
-    Download Excel
-</Button>
+                {/* <Stack
+                    direction="row"
+                    spacing={2}
+                >
+
+                    <Button
+
+                        variant="contained"
+
+                        color="success"
+
+                        startIcon={<TableViewIcon />}
+
+                        onClick={()=>
+
+                            reportService.downloadExcel(history)
+
+                        }
+
+                    >
+
+                        Download Excel
+
+                    </Button>
+
+                    
+
+                </Stack> */}
 
             </DialogActions>
 

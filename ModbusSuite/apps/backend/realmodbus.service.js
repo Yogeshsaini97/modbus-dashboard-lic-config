@@ -1,119 +1,336 @@
 const ModbusRTU = require("modbus-serial");
-
 const { emitModbusData } = require("./socket");
 
 const client = new ModbusRTU();
 
+/*
+-----------------------------------------
+Production Tracking
+-----------------------------------------
+*/
+let totalPipeLength = 0;
+
+
+let resetRequested = false;
+
+let pollingTimer = null;
+
+const CONFIG = {
+
+    // CONNECTION TYPE
+    connectionType: "TCP", // "TCP" or "RTU"
+
+    // TCP SETTINGS
+    tcp: {
+        host: "192.168.3.250",
+        port: 502
+    },
+
+    // SERIAL SETTINGS
+    serial: {
+        port: "COM2",
+        baudRate: 9600,
+        dataBits: 8,
+        parity: "none",
+        stopBits: 1
+    },
+
+    // COMMON
+    slaveId: 1,
+
+    pollingInterval: 60000
+
+};
+
 async function connectRealModbus() {
 
-  try {
+    try {
 
-    console.log("Connecting Real Modbus...");
+        console.log("================================");
+        console.log("Connecting PLC...");
+        console.log("================================");
 
-    await client.connectRTUBuffered("COM2", {
+        if (CONFIG.connectionType === "TCP") {
 
-      baudRate: 9600,
+            console.log("Connection Type : TCP/IP");
 
-      dataBits: 8,
+            await client.connectTCP(
 
-      parity: "none",
+                CONFIG.tcp.host,
 
-      stopBits: 1
+                {
 
-    });
+                    port: CONFIG.tcp.port
 
-    client.setID(1);
+                }
 
-    console.log("Real Modbus Connected");
+            );
 
-    startRealPolling();
+        } else {
 
-  } catch (error) {
+            console.log("Connection Type : Serial (RTU)");
 
-    console.log("Modbus Connection Failed");
+            await client.connectRTUBuffered(
 
-    console.log(error.message);
+                CONFIG.serial.port,
 
-    reconnect();
+                {
 
-  }
+                    baudRate: CONFIG.serial.baudRate,
 
-}
+                    dataBits: CONFIG.serial.dataBits,
 
-async function pollRealData() {
+                    parity: CONFIG.serial.parity,
 
-  try {
+                    stopBits: CONFIG.serial.stopBits
 
-    // READ HOLDING REGISTERS
+                }
 
-    const response = await client.readHoldingRegisters(0, 10);
+            );
 
-    const registers = response.data;
+        }
 
-    // CONVERT RAW REGISTERS TO MEANINGFUL DATA
+        client.setID(CONFIG.slaveId);
 
-    const payload = {
+        console.log("✅ PLC Connected");
 
-      timestamp: Date.now(),
+        if (CONFIG.connectionType === "TCP") {
 
-      registers: {
+            console.log(`Host     : ${CONFIG.tcp.host}`);
+            console.log(`Port     : ${CONFIG.tcp.port}`);
 
-        speed: registers[0],
+        } else {
 
-        temperature: registers[1] / 10,
+            console.log(`COM Port : ${CONFIG.serial.port}`);
+            console.log(`BaudRate : ${CONFIG.serial.baudRate}`);
 
-        torque: registers[2],
+        }
 
-        voltage: registers[3],
+        console.log(`Slave ID : ${CONFIG.slaveId}`);
 
-        current: registers[4] / 100,
+        startPolling();
 
-        vibration: registers[5],
+    }
 
-        alarm: registers[6] === 1
+    catch (error) {
 
-      }
+        console.log("❌ Connection Failed");
 
-    };
+        console.log(error.message);
 
-    console.log(payload);
+        reconnect();
 
-    emitModbusData(payload);
-
-  } catch (error) {
-
-    console.log("Polling Error");
-
-    console.log(error.message);
-
-    reconnect();
-
-  }
+    }
 
 }
 
-function startRealPolling() {
+async function pollMachineData() {
 
-  setInterval(async () => {
+    try {
 
-    await pollRealData();
+        /*
+        -----------------------------------------
+        Read Holding Registers
+        -----------------------------------------
+        */
 
-  }, 1000);
+        const holdingRegisters =
+            await client.readHoldingRegisters(500, 11);
+
+        /*
+        -----------------------------------------
+        Read Current Pipe Length (40120)
+        -----------------------------------------
+        */
+
+        const currentPipeRegister =
+            await client.readHoldingRegisters(120, 1);
+
+        /*
+        -----------------------------------------
+        Read Machine Status
+        -----------------------------------------
+        */
+
+        const coils =
+            await client.readCoils(0, 1);
+
+        const machineStatus =
+            coils.data[0]
+                ? "ON"
+                : "OFF";
+
+        const frequency =
+            holdingRegisters.data[4];
+
+        const pipeLength =
+            currentPipeRegister.data[0];
+
+        const alarm =
+            holdingRegisters.data[10] === 1;
+
+        /*
+        -----------------------------------------
+        PRODUCTION CALCULATION
+        -----------------------------------------
+        */
+
+        console.log("\n========================================");
+        console.log("NEW POLLING CYCLE");
+        console.log("========================================");
+
+        console.log("Received Pipe Length :", pipeLength);
+
+        console.log("Previous Total       :", totalPipeLength);
+
+        // Add every interval value
+        totalPipeLength += pipeLength;
+
+        console.log("Updated Total        :", totalPipeLength);
+
+        console.log("========================================");
+
+        /*
+        -----------------------------------------
+        DEBUG TABLE
+        -----------------------------------------
+        */
+
+        console.clear();
+
+        console.table({
+
+            "Machine Status": machineStatus,
+
+            "Frequency (Hz)": frequency,
+
+            "Current Pipe Length (40120)": pipeLength,
+
+            "Total Produced": totalPipeLength,
+
+            "Alarm Register": holdingRegisters.data[10],
+
+            "Alarm Status": alarm
+
+        });
+
+        /*
+        -----------------------------------------
+        Payload
+        -----------------------------------------
+        */
+
+        const payload = {
+
+            timestamp: Date.now(),
+
+            registers: {
+
+                motorStatus: machineStatus,
+
+                frequency,
+
+                pipeLength,
+
+                totalPipeLength,
+
+                alarm,
+
+                alarmMessage:
+                    alarm
+                        ? "Machine 1 Motor Frequency Below 40 Hz"
+                        : ""
+
+            }
+
+        };
+
+        console.log("\n========================================");
+        console.log("PAYLOAD");
+        console.log("========================================");
+
+        console.dir(payload, { depth: null });
+
+        console.log("========================================\n");
+
+        emitModbusData(payload);
+
+    }
+
+    catch (error) {
+
+        console.log("\nPolling Error");
+
+        console.log(error.message);
+
+        reconnect();
+
+    }
+
+}
+
+function startPolling() {
+
+    if (pollingTimer) {
+
+        clearInterval(pollingTimer);
+
+    }
+
+    pollingTimer = setInterval(() => {
+
+        pollMachineData();
+
+    }, CONFIG.pollingInterval);
 
 }
 
 function reconnect() {
 
-  setTimeout(async () => {
+    if (pollingTimer) {
 
-    console.log("Reconnecting Modbus...");
+        clearInterval(pollingTimer);
 
-    await connectRealModbus();
+        pollingTimer = null;
 
-  }, 5000);
+    }
+
+    try {
+
+        client.close();
+
+    }
+
+    catch (err) {}
+
+    console.log("\nReconnecting in 5 seconds...\n");
+
+    setTimeout(() => {
+
+        connectRealModbus();
+
+    }, 5000);
+
+}
+
+function resetProductionReal() {
+
+    console.log("\n====================================");
+    console.log("SYSTEM RESET REQUEST RECEIVED");
+    console.log("====================================");
+
+    totalPipeLength = 0;
+     // Immediately send latest values
+    pollMachineData();
+
+    console.log("✅ Total Production Reset Successfully");
 
 }
 
 module.exports = {
-  connectRealModbus
+
+    connectRealModbus,
+
+    resetProductionReal
+
 };

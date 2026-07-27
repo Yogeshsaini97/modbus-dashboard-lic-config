@@ -17,6 +17,8 @@ import dayjs from "dayjs";
 import { useMachine } from "../../../Context/MachineContext";
 import { useState } from "react";
 import MachineReportDialog from "../../report/MachineReportDialog";
+import pdfReportService from "../../report/pdfReport.service";
+import vanshLogo from "../../../assets/vansh_logo.jpeg";
 
 
 
@@ -24,6 +26,14 @@ function Header() {
 
     const { connected } = useMachine();
      const [openReport, setOpenReport] = useState(false);
+
+      const {
+         machineData,
+    history,
+    runtime,
+    currentInterval,
+    intervalData
+    } = useMachine();
 
     return (
 
@@ -44,26 +54,35 @@ function Header() {
         >
 
             <Toolbar>
+<Box
+    sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 2
+    }}
+>
+    <Box
+        component="img"
+        src={vanshLogo}
+        alt="Vansh Industries"
+        sx={{
+            width: 68,
+            height: 60,
+            borderRadius: "10px",
+            objectFit: "contain"
+        }}
+    />
 
-                <Box>
+    <Box>
+        <Typography variant="h6" fontWeight={700}>
+            Vansh Industries
+        </Typography>
 
-                    <Typography variant="h6">
-
-                        Vansh Industries
-
-                    </Typography>
-
-                    <Typography
-
-                        variant="caption"
-
-                    >
-
-                        Industrial Monitoring Platform
-
-                    </Typography>
-
-                </Box>
+        <Typography variant="caption" color="text.secondary">
+            Industrial Monitoring Platform
+        </Typography>
+    </Box>
+</Box>
             
 
                 <Box sx={{ flexGrow: 1 , marginInline:"12px"}} />
@@ -72,7 +91,30 @@ function Header() {
     onClick={() => setOpenReport(true)}
     sx={{  marginInline:"12px"}}
 >
-    View & download operational history
+    View operational history
+</Button>
+<Button
+ sx={{  marginInline:"12px"}}
+    variant="contained"
+
+    color="error"
+
+    onClick={() =>
+
+        pdfReportService.download(
+    machineData,
+    history,
+    runtime,
+    currentInterval,
+    intervalData[currentInterval.key]
+)
+
+    }
+
+>
+
+    Download PDF Report
+
 </Button>
 
 
