@@ -1,0 +1,36 @@
+{
+  "name": "modbus-electron",
+  "version": "1.0.0",
+  "description": "Modbus Dashboard Desktop",
+  "type": "module",
+  "main": "main.js",
+  "author": "",
+  "license": "ISC",
+  "scripts": {
+    "start": "electron .",
+      "dev": "set NODE_ENV=development&& electron .",
+    "dist": "electron-builder"
+  },
+  "dependencies": {
+    "concurrently": "^10.0.3",
+    "electron": "^43.1.0",
+    "electron-builder": "^26.15.3",
+    "electron-store": "^11.0.2",
+    "node-machine-id": "^1.1.12",
+    "wait-on": "^9.0.10"
+  },
+  "build": {
+    "appId": "com.modbus.dashboard",
+    "productName": "Modbus Dashboard",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    }
+  }
+}
