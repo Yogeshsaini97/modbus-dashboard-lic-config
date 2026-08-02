@@ -1,0 +1,8 @@
+{
+  "name": "modbus-database",
+  "version": "1.0.0",
+  "description": "Modbus Database Management",
+  "type": "module",
+  "author": "",
+  "license": "ISC"
+}

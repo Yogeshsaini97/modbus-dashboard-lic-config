@@ -7,8 +7,9 @@
   "author": "",
   "license": "ISC",
   "scripts": {
-    "start": "electron .",
-      "dev": "set NODE_ENV=development&& electron .",
+    "start": "npm run build:ui && electron .",
+    "dev": "concurrently \"npm run dev --prefix ../ui\" \"wait-on http://localhost:5173 && set NODE_ENV=development&& electron .\"",
+    "build:ui": "npm run build --prefix ../ui",
     "dist": "electron-builder"
   },
   "dependencies": {

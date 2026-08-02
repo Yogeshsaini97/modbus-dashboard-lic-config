@@ -1,0 +1,8 @@
+{
+  "name": "modbus-shared",
+  "version": "1.0.0",
+  "description": "Modbus Shared Utilities",
+  "type": "module",
+  "author": "",
+  "license": "ISC"
+}

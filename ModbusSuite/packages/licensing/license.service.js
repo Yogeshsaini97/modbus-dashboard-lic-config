@@ -8,14 +8,19 @@ import { getMachineId } from "./machine.service.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const publicKey = fs.readFileSync(
-    path.join(__dirname, "../keys/public.pem"),
-    "utf8"
-);
+const publicKeyPath = path.join(__dirname, "keys/public.pem");
+
+function loadPublicKey() {
+    return fs.readFileSync(publicKeyPath, "utf8");
+}
 
 export function verifyLicenseFile(filePath) {
 
     try {
+
+        // Load lazily so a key deployment problem never prevents Electron from
+        // creating its window. The IPC caller receives a useful failure reason.
+        const publicKey = loadPublicKey();
 
         const file = fs.readFileSync(filePath, "utf8");
 
@@ -61,7 +66,9 @@ export function verifyLicenseFile(filePath) {
 
         }
 
-        if (new Date(license.expiresOn) < new Date()) {
+        const expiresAt = new Date(license.expiresOn);
+
+        if (Number.isNaN(expiresAt.getTime()) || expiresAt < new Date()) {
 
             return {
 
@@ -81,7 +88,14 @@ export function verifyLicenseFile(filePath) {
 
             expiresOn: license.expiresOn,
 
-            licenseType: license.licenseType
+            remainingDays: Math.max(
+                0,
+                Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+            ),
+
+            // Older/generated license files may omit this optional display
+            // field. A verified license must still unlock the application.
+            licenseType: license.licenseType || "LICENSE"
 
         };
 
@@ -89,11 +103,18 @@ export function verifyLicenseFile(filePath) {
 
     catch (err) {
 
+        console.error("[Licensing] License verification failed", {
+            code: err.code,
+            message: err.message,
+        });
+
         return {
 
             valid: false,
 
-            reason: "INVALID_LICENSE"
+            reason: err.code === "ENOENT"
+                ? "PUBLIC_KEY_UNAVAILABLE"
+                : "INVALID_LICENSE"
 
         };
 

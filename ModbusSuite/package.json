@@ -1,0 +1,23 @@
+{
+  "name": "modbus-suite",
+  "version": "1.0.0",
+  "description": "Modbus Dashboard with Licensing",
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "apps/electron",
+    "apps/ui",
+    "apps/backend",
+    "packages/database",
+    "packages/licensing",
+    "packages/shared"
+  ],
+  "scripts": {
+    "install:all": "npm install --workspaces",
+    "dev": "npm run dev --workspace=apps/electron",
+    "build": "npm run build --workspaces"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

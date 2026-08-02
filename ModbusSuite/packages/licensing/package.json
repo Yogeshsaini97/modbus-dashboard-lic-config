@@ -1,0 +1,14 @@
+{
+  "name": "modbus-licensing",
+  "version": "1.0.0",
+  "description": "Modbus License Management",
+  "type": "module",
+  "main": "main.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "electron": "^43.1.0",
+    "electron-store": "^11.0.2",
+    "node-machine-id": "^1.1.12"
+  }
+}

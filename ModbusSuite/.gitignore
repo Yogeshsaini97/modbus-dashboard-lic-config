@@ -1,0 +1,125 @@
+# =========================
+# Dependencies
+# =========================
+node_modules/
+
+# =========================
+# Build Outputs
+# =========================
+dist/
+build/
+out/
+release/
+coverage/
+.vite/
+vite-build/
+
+# Electron Builder
+*.blockmap
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+*.snap
+*.zip
+*.7z
+*.tar.gz
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# Environment Files
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# IDE
+# =========================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.code-workspace
+
+# =========================
+# OS Files
+# =========================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# =========================
+# Cache
+# =========================
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+
+# =========================
+# Temporary Files
+# =========================
+tmp/
+temp/
+*.tmp
+
+# =========================
+# Runtime Data
+# =========================
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# =========================
+# SQLite Databases
+# =========================
+*.db
+*.sqlite
+*.sqlite3
+
+# =========================
+# Electron Store / User Data
+# =========================
+userData/
+userdata/
+config/
+storage/
+
+# =========================
+# Certificates / Keys
+# =========================
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+
+# =========================
+# License Files (Sensitive)
+# =========================
+license.json
+license.dat
+private.key
+public.key
+
+# =========================
+# Misc
+# =========================
+*.orig
+*.rej

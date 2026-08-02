@@ -8,23 +8,23 @@ let backendProcess;
 import {
   initializeTrial,
   getTrialStatus,
-} from "./services/trial.service.js";
+} from "../../packages/licensing/trial.service.js";
 
-import { getMachineId } from "./services/machine.service.js";
+import { getMachineId } from "../../packages/licensing/machine.service.js";
 
 import {
   browseLicenseFile,
   activateLicense,
-} from "./services/activation.service.js";
+} from "../../packages/licensing/activation.service.js";
 
 import {
   licenseExists,
   getLicensePath,
-} from "./services/storage.service.js";
+} from "../../packages/licensing/storage.service.js";
 
 import {
   verifyLicenseFile,
-} from "./services/license.service.js";
+} from "../../packages/licensing/license.service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,16 +49,38 @@ function createWindow() {
     },
   });
 
- const isDev = process.env.NODE_ENV === "development";
+  const isDev = process.env.NODE_ENV === "development";
 
-if (isDev) {
-    mainWindow.loadURL("http://localhost:5173");
+  mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    if (isMainFrame) {
+      console.error("[Electron] Renderer failed to load", {
+        errorCode,
+        errorDescription,
+        validatedURL,
+      });
+    }
+  });
+
+  mainWindow.webContents.on("console-message", (_event, level, message, line, sourceId) => {
+    console.log("[Renderer console]", { level, message, line, sourceId });
+  });
+
+  mainWindow.webContents.on("render-process-gone", (_event, details) => {
+    console.error("[Electron] Renderer process exited", details);
+  });
+
+  if (isDev) {
+    mainWindow.loadURL("http://localhost:5173").catch((error) => {
+      console.error("[Electron] Unable to load the Vite dev server", error);
+    });
     mainWindow.webContents.openDevTools();
-} else {
+  } else {
     mainWindow.loadFile(
-        path.join(__dirname, "../ui/dist/index.html")
-    );
-}
+      path.join(__dirname, "../ui/dist/index.html")
+    ).catch((error) => {
+      console.error("[Electron] Unable to load the built renderer", error);
+    });
+  }
 
 
   mainWindow.on("closed", () => {
@@ -110,6 +132,11 @@ function startBackend() {
 }
 app.whenReady().then(() => {
 
+  console.log("[Electron] Starting", {
+    isPackaged: app.isPackaged,
+    nodeEnv: process.env.NODE_ENV || "production",
+  });
+
   // Only create a trial if no activated license exists
   if (!licenseExists()) {
     initializeTrial();
@@ -143,14 +170,23 @@ setTimeout(() => {
   ipcMain.handle("get-license-status", () => {
     try {
 
+      console.log("[Licensing IPC] get-license-status");
+
       if (licenseExists()) {
 
         const result = verifyLicenseFile(getLicensePath());
 
         if (result.valid) {
 
+          console.log("[Licensing IPC] License is valid", {
+            licenseType: result.licenseType,
+            expiresOn: result.expiresOn,
+          });
+
           return {
             version: app.getVersion(),
+
+            machineId: getMachineId(),
 
             licenseType: result.licenseType,
 
@@ -158,12 +194,24 @@ setTimeout(() => {
 
             expiresOn: result.expiresOn,
 
-            remainingDays: null,
+            remainingDays: result.remainingDays,
 
             expired: false,
           };
 
         }
+
+        console.warn("[Licensing IPC] Installed license is invalid", {
+          reason: result.reason,
+        });
+
+        return {
+          version: app.getVersion(),
+          machineId: getMachineId(),
+          licenseType: "INVALID",
+          expired: true,
+          reason: result.reason,
+        };
 
       }
 
@@ -171,9 +219,13 @@ setTimeout(() => {
 
       const trial = getTrialStatus();
 
+      console.log("[Licensing IPC] Returning trial status", trial);
+
       return {
 
         version: app.getVersion(),
+
+        machineId: getMachineId(),
 
         licenseType: "TRIAL",
 
@@ -185,11 +237,13 @@ setTimeout(() => {
 
     } catch (err) {
 
-      console.error("License Status Error:", err);
+      console.error("[Licensing IPC] License status failed", err);
 
       return {
 
         version: app.getVersion(),
+
+        machineId: "",
 
         licenseType: "TRIAL",
 
@@ -208,6 +262,7 @@ setTimeout(() => {
 
   ipcMain.handle("browse-license", async () => {
     try {
+      console.log("[Licensing IPC] browse-license");
       return await browseLicenseFile();
     } catch (err) {
       console.error("Browse Error:", err);
@@ -221,7 +276,13 @@ setTimeout(() => {
 
   ipcMain.handle("activate-license", async (event, filePath) => {
     try {
-      return activateLicense(filePath);
+      console.log("[Licensing IPC] activate-license");
+      const result = activateLicense(filePath);
+      console.log("[Licensing IPC] License activation result", {
+        valid: result.valid,
+        reason: result.reason,
+      });
+      return result;
     } catch (err) {
 
       console.error("Activation Error:", err);
