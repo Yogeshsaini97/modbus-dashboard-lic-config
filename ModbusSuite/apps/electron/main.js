@@ -2,6 +2,14 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
+import {
+  initializeDatabase,
+  getAllStorage,
+  setStorageValue,
+  removeStorageValue,
+  clearStorage,
+  closeDatabase,
+} from "../../packages/database/sqlite.js";
 
 let backendProcess;
 
@@ -136,6 +144,28 @@ app.whenReady().then(() => {
     isPackaged: app.isPackaged,
     nodeEnv: process.env.NODE_ENV || "production",
   });
+
+  initializeDatabase(app.getPath("userData"));
+
+  ipcMain.handle("storage:get-all", () => getAllStorage());
+
+  ipcMain.handle("storage:set", (_event, key, value) => {
+    if (typeof key !== "string" || typeof value !== "string") {
+      throw new TypeError("Storage keys and values must be strings");
+    }
+
+    setStorageValue(key, value);
+  });
+
+  ipcMain.handle("storage:remove", (_event, key) => {
+    if (typeof key !== "string") {
+      throw new TypeError("Storage key must be a string");
+    }
+
+    removeStorageValue(key);
+  });
+
+  ipcMain.handle("storage:clear", () => clearStorage());
 
   // Only create a trial if no activated license exists
   if (!licenseExists()) {
@@ -320,4 +350,8 @@ app.on("window-all-closed", () => {
 
     }
 
+});
+
+app.on("before-quit", () => {
+  closeDatabase();
 });

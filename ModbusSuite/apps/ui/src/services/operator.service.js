@@ -1,16 +1,18 @@
+import StorageService from "./storage.service";
+
 class OperatorService {
 
     KEY = "current_operator";
 
     save(name) {
 
-        localStorage.setItem(this.KEY, name);
+        StorageService.save(this.KEY, name);
 
     }
 
     get() {
 
-        return localStorage.getItem(this.KEY) || "Unassigned";
+        return StorageService.get(this.KEY, "Unassigned");
 
     }
 

@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import StorageService from "./storage.service";
 
 const STORAGE_KEY = "scheduled_reset";
 
@@ -6,27 +7,19 @@ class ResetSchedulerService {
 
     save(schedule) {
 
-        localStorage.setItem(
-
-            STORAGE_KEY,
-
-            JSON.stringify(schedule)
-
-        );
+        StorageService.save(STORAGE_KEY, schedule);
 
     }
 
     get() {
 
-        const data = localStorage.getItem(STORAGE_KEY);
-
-        return data ? JSON.parse(data) : null;
+        return StorageService.get(STORAGE_KEY, null);
 
     }
 
     clear() {
 
-        localStorage.removeItem(STORAGE_KEY);
+        StorageService.remove(STORAGE_KEY);
 
     }
 

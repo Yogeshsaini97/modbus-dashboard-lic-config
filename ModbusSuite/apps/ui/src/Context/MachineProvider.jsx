@@ -21,6 +21,7 @@ import { toast } from "react-toastify";
 function MachineProvider({ children }) {
 
     const [connected, setConnected] = useState(false);
+const [storageReady, setStorageReady] = useState(false);
 const [intervalData, setIntervalData] = useState(
     shiftService.getIntervalData()
 );
@@ -74,6 +75,47 @@ const [currentInterval, setCurrentInterval] = useState(
     );
 
     useEffect(() => {
+
+        let active = true;
+
+        StorageService.initialize()
+            .then(() => {
+                if (!active) return;
+
+                setMachineData(StorageService.get(
+                    APP_CONFIG.STORAGE_KEYS.MACHINE_STATE,
+                    {
+                        motorStatus: "OFF",
+                        frequency: 0,
+                        pipeLength: 0,
+                        alarm: false,
+                        alarmMessage: "",
+                        timestamp: null
+                    }
+                ));
+                setRuntime(RuntimeService.getRuntime());
+                setHistory(HistoryService.getHistory());
+                setEvents(EventService.getEvents());
+                shiftService.syncCurrentInterval();
+                setCurrentInterval(shiftService.getCurrentInterval());
+                setStorageReady(true);
+            })
+            .catch((error) => {
+                console.error("[Storage] SQLite initialization failed", error);
+                if (active) setStorageReady(true);
+            });
+
+        return () => {
+            active = false;
+        };
+
+    }, []);
+
+    useEffect(() => {
+
+        if (!storageReady) {
+            return undefined;
+        }
 
         socket.on("connect", () => {
 
@@ -220,7 +262,7 @@ setCurrentInterval(
 
         };
 
-    }, [machineData, events]);
+    }, [machineData, events, storageReady]);
 
 
 function resetSystem() {
@@ -298,6 +340,8 @@ toast.success("Shift reset completed successfully.");
     intervalData,
 
     currentInterval,
+
+    storageReady,
 
     resetSystem
 

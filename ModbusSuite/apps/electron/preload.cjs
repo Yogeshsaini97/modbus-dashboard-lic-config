@@ -24,3 +24,10 @@ contextBridge.exposeInMainWorld("licenseAPI", {
     
 
 });
+
+contextBridge.exposeInMainWorld("storageAPI", {
+    getAll: () => ipcRenderer.invoke("storage:get-all"),
+    set: (key, value) => ipcRenderer.invoke("storage:set", key, value),
+    remove: (key) => ipcRenderer.invoke("storage:remove", key),
+    clear: () => ipcRenderer.invoke("storage:clear"),
+});
