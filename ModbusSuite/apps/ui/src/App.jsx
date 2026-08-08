@@ -114,7 +114,7 @@ function App() {
   // Otherwise show dashboard with expiration warning if needed
   return (
     <>
-      <Dashboard />
+      <Dashboard licenseInfo={licenseInfo} daysLeft={daysLeft} />
       <LicenseExpirationWarning
         open={showExpirationWarning && !showExpiredDialog}
         onClose={() => setShowExpirationWarning(false)}

@@ -45,7 +45,7 @@ import shiftService from "../../services/shift.service";
 import ShiftInfoCard from "../../Components/ShiftInfoCard/ShiftInfoCard";
 import { toast } from "react-toastify";
 
-function Dashboard() {
+function Dashboard({ licenseInfo, daysLeft }) {
 
    const {
 
@@ -56,7 +56,8 @@ function Dashboard() {
     intervalData,
     resetSystem,
     connected,
-    events
+    events,
+    storageReady
 
 } = useMachine();
 
@@ -191,7 +192,7 @@ if (diff > 60000 && resetExecuted) {
 
     return () => clearInterval(timer);
 
-}, []);
+}, [storageReady]);
 useEffect(() => {
 
     const syncOperator = () => {
@@ -220,7 +221,7 @@ useEffect(() => {
 
     };
 
-}, []);
+}, [storageReady]);
 
 useEffect(() => {
 
@@ -242,7 +243,7 @@ useEffect(() => {
 
     return () => clearInterval(timer);
 
-}, []);
+}, [storageReady]);
 useEffect(() => {
 
     if (!machineData.alarm) {
@@ -264,7 +265,11 @@ useEffect(() => {
             }}
         >
 
-            <Header connected={connected} />
+            <Header
+                connected={connected}
+                licenseInfo={licenseInfo}
+                daysLeft={daysLeft}
+            />
 
             <Box sx={{
         p: 4,

@@ -19,10 +19,11 @@ import { useState } from "react";
 import MachineReportDialog from "../../report/MachineReportDialog";
 import pdfReportService from "../../report/pdfReport.service";
 import vanshLogo from "../../../assets/vansh_logo.jpeg";
+import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
 
 
 
-function Header() {
+function Header({ licenseInfo, daysLeft }) {
 
     const { connected } = useMachine();
      const [openReport, setOpenReport] = useState(false);
@@ -53,7 +54,7 @@ function Header() {
 
         >
 
-            <Toolbar>
+            <Toolbar sx={{ gap: 1.5, flexWrap: "wrap", py: 1 }}>
 <Box
     sx={{
         display: "flex",
@@ -86,6 +87,33 @@ function Header() {
             
 
                 <Box sx={{ flexGrow: 1 , marginInline:"12px"}} />
+    {licenseInfo && (
+        <Box
+            sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                minWidth: 220,
+                px: 1.25,
+                py: 0.75,
+                borderRadius: 1.5,
+                border: "1px solid",
+                borderColor: daysLeft <= 7 ? "warning.main" : "success.main",
+                backgroundColor: "rgba(15, 23, 42, 0.55)",
+            }}
+        >
+            <WorkspacePremiumIcon color={daysLeft <= 7 ? "warning" : "success"} />
+            <Box sx={{ minWidth: 0 }}>
+                <Typography variant="caption" sx={{ display: "block", color: "grey.300", lineHeight: 1.2 }}>
+                    {licenseInfo.licenseType} License{licenseInfo.customer ? ` · ${licenseInfo.customer}` : ""}
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 700, whiteSpace: "nowrap" }}>
+                    {daysLeft} day{daysLeft === 1 ? "" : "s"} remaining
+                    {licenseInfo.expiresOn ? ` · Expires ${dayjs(licenseInfo.expiresOn).format("DD MMM YYYY")}` : ""}
+                </Typography>
+            </Box>
+        </Box>
+    )}
     <Button
     variant="contained"
     onClick={() => setOpenReport(true)}
